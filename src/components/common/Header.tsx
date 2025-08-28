@@ -14,15 +14,13 @@ export default function Header() {
   const [searchResults, setSearchResults] = useState<
     { id: number; imdb_id: string; title: string; year?: number }[]
   >([]);
-  const [selectedMovieId, setSelectedMovieId] = useState<number | null>(null);
+  const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null); // Changed to string for consistency
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
 
   const routeToLoginOrLogout = () => {
     if (pathname === "/admin-dashboard") {
-      // Perform logout logic
-      // For example, remove token cookie and redirect
       document.cookie = "token=; Max-Age=0; path=/";
       router.push("/admin-login");
     } else {
@@ -40,25 +38,64 @@ export default function Header() {
 
   // Fetch results
   useEffect(() => {
-    if (!debouncedQuery) return;
+    if (!debouncedQuery) {
+      setSearchResults([]);
+      return;
+    }
+
+    console.log("🔍 Searching for:", debouncedQuery);
+    
     const fetchResults = async () => {
       try {
-        const res = await fetch(`/api/get-movies?search=${debouncedQuery}`);
+        const res = await fetch(`/api/get-movies?search=${encodeURIComponent(debouncedQuery)}`);
         const data = await res.json();
-        setSearchResults(data);
+        
+        console.log("📊 Search results:", data);
+        console.log("📊 Results count:", data?.length || 0);
+        
+        if (data?.length > 0) {
+          console.log("🎬 Sample result:", {
+            id: data[0].id,
+            imdb_id: data[0].imdb_id,
+            title: data[0].title,
+            year: data[0].year
+          });
+        }
+        
+        setSearchResults(data || []);
       } catch (err) {
-        console.error(err);
+        console.error("❌ Search error:", err);
+        setSearchResults([]);
       }
     };
     fetchResults();
   }, [debouncedQuery]);
 
-  const handleMovieSelect = (id: number) => {
-    setSelectedMovieId(id);
+  // Consistent movie selection handler
+  const handleMovieSelect = (movie: { id: number; imdb_id: string; title: string; year?: number }) => {
+    console.log("🎯 Movie selected:", {
+      dbId: movie.id,
+      imdbId: movie.imdb_id,
+      title: movie.title,
+      year: movie.year
+    });
+
+    // Always use database ID first, fallback to imdb_id
+    const movieIdentifier = movie.id ? movie.id.toString() : movie.imdb_id;
+    
+    console.log("🚀 Using identifier:", movieIdentifier, "for movie:", movie.title);
+    
+    setSelectedMovieId(movieIdentifier);
     setSearchResults([]);
     setSearchQuery("");
     setShowMobileSearch(false);
   };
+
+  useEffect(() => {
+    if (selectedMovieId !== null) {
+      console.log("🎯 Selected Movie ID:", selectedMovieId);
+    }
+  }, [selectedMovieId]);
 
   // Desktop outside click
   useEffect(() => {
@@ -97,11 +134,13 @@ export default function Header() {
             <div className="absolute top-full left-0 w-64 bg-[var(--surface)] border border-[var(--overlay)] mt-1 max-h-64 overflow-y-auto rounded shadow-lg z-50">
               {searchResults.map((movie) => (
                 <div
-                  key={movie.id}
+                  key={`${movie.id}-${movie.imdb_id}`}
                   className="px-3 py-2 hover:bg-[var(--highlight)] cursor-pointer text-[var(--text-primary)]"
-                  onClick={() => handleMovieSelect(movie.id)}
+                  onClick={() => handleMovieSelect(movie)}
                 >
-                  {movie.title} {movie.year ? `(${movie.year})` : ""}
+                  <div className="font-medium">{movie.title}</div>
+                  {movie.year && <div className="text-xs opacity-70">({movie.year})</div>}
+                  <div className="text-xs opacity-50">DB ID: {movie.id} | IMDB: {movie.imdb_id}</div>
                 </div>
               ))}
             </div>
@@ -117,7 +156,7 @@ export default function Header() {
             <FaSearch />
           </button>
           {showMobileSearch && (
-            <div className="absolute top-full left-0 mt-2 w-64 bg-[var(--surface)] border border-[var(--overlay)] rounded shadow-lg p-2 z-50">
+            <div className="absolute top-full right-0 mt-2 w-80 bg-[var(--surface)] border border-[var(--overlay)] rounded shadow-lg p-2 z-50">
               <input
                 type="text"
                 placeholder="Search movies..."
@@ -127,14 +166,16 @@ export default function Header() {
                 className="w-full px-3 py-2 rounded bg-[var(--surface)] text-[var(--text-primary)] border border-[var(--overlay)] focus:outline-none"
               />
               {searchQuery && searchResults.length > 0 && (
-                <div className="mt-2 max-h-64 overflow-y-auto border-t border-[var(--overlay)]">
+                <div className="mt-2 max-h-64 overflow-y-auto border-t border-[var(--overlay)] pt-2">
                   {searchResults.map((movie) => (
                     <div
-                      key={movie.id}
-                      className="px-3 py-2 hover:bg-[var(--highlight)] cursor-pointer text-[var(--text-primary)]"
-                      onClick={() => handleMovieSelect(movie.id)}
+                      key={`${movie.id}-${movie.imdb_id}`}
+                      className="px-3 py-2 hover:bg-[var(--highlight)] cursor-pointer text-[var(--text-primary)] rounded mb-1"
+                      onClick={() => handleMovieSelect(movie)}
                     >
-                      {movie.title} {movie.year ? `(${movie.year})` : ""}
+                      <div className="font-medium">{movie.title}</div>
+                      {movie.year && <div className="text-xs opacity-70">({movie.year})</div>}
+                      <div className="text-xs opacity-50">DB ID: {movie.id} | IMDB: {movie.imdb_id}</div>
                     </div>
                   ))}
                 </div>
@@ -161,7 +202,7 @@ export default function Header() {
       {/* Movie Modal */}
       {selectedMovieId && (
         <SearchMovieModal
-          movieId={selectedMovieId}
+          movieId={Number(selectedMovieId)}
           onClose={() => setSelectedMovieId(null)}
         />
       )}
