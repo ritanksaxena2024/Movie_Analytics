@@ -18,6 +18,18 @@ interface MovieModalProps {
   onClose: () => void;
 }
 
+// ✅ Type API response structure
+interface MovieApiResponse {
+  movie: {
+    id: number;
+    title: string;
+    rating: number;
+  };
+  videos: { url: string }[];
+  cast: { name: string; profile: string | null }[];
+  directors: string[];
+}
+
 export default function MovieModal({ movieId, onClose }: MovieModalProps) {
   const [movie, setMovie] = useState<MovieDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -28,14 +40,14 @@ export default function MovieModal({ movieId, onClose }: MovieModalProps) {
     const fetchMovie = async () => {
       try {
         const res = await fetch(`/api/movie-details/${movieId}`);
-        const data = await res.json();
+        const data: MovieApiResponse = await res.json();
         setMovie({
           id: data.movie.id,
           title: data.movie.title,
           rating: data.movie.rating,
           teaser_url: data.videos[0]?.url ?? null,
-          cast: data.cast.map((c: any) => ({ name: c.name, profile: c.profile })),
-          directors: data.directors.map((d: string) => ({ name: d, profile: null })),
+          cast: data.cast.map(c => ({ name: c.name, profile: c.profile })),
+          directors: data.directors.map(d => ({ name: d, profile: null })),
         });
       } catch (err) {
         console.error(err);
@@ -80,8 +92,9 @@ export default function MovieModal({ movieId, onClose }: MovieModalProps) {
 
   return (
     <Portal>
-      <div className="fixed inset-0 z-50 flex items-center justify-center  bg-opacity-70"
-      style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-70"
+        style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
       >
         <div
           ref={modalRef}
@@ -123,7 +136,10 @@ export default function MovieModal({ movieId, onClose }: MovieModalProps) {
                     </div>
                   ))
                 : movie?.cast.map((person, idx) => (
-                    <div key={idx} className="flex flex-col items-center w-20 sm:w-24 md:w-28 lg:w-32 flex-shrink-0 text-center text-white">
+                    <div
+                      key={idx}
+                      className="flex flex-col items-center w-20 sm:w-24 md:w-28 lg:w-32 flex-shrink-0 text-center text-white"
+                    >
                       {renderAvatar(person)}
                       <span className="text-sm leading-snug mt-1 line-clamp-2 break-words">
                         {person.name}
@@ -143,7 +159,10 @@ export default function MovieModal({ movieId, onClose }: MovieModalProps) {
                     </div>
                   ))
                 : movie?.directors.map((person, idx) => (
-                    <div key={idx} className="flex flex-col items-center w-20 sm:w-24 md:w-28 lg:w-32 flex-shrink-0 text-center text-white">
+                    <div
+                      key={idx}
+                      className="flex flex-col items-center w-20 sm:w-24 md:w-28 lg:w-32 flex-shrink-0 text-center text-white"
+                    >
                       {renderAvatar(person)}
                       <span className="text-sm leading-snug mt-1 line-clamp-2 break-words">
                         {person.name}

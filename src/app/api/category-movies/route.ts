@@ -4,8 +4,32 @@ import axios from "axios";
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 
-function normalizeMovies(results: any[]) {
-  return results.map((m: any) => ({
+// ✅ Define types for TMDB movie and response
+interface TMDBMovie {
+  id: number;
+  title: string;
+  release_date?: string;
+  vote_average: number;
+  poster_path?: string | null;
+  overview: string;
+}
+
+interface TMDBResponse {
+  results: TMDBMovie[];
+}
+
+interface NormalizedMovie {
+  id: number;
+  title: string;
+  year: string | null;
+  rating: number;
+  poster: string | null;
+  overview: string;
+}
+
+// ✅ Strongly typed normalize function
+function normalizeMovies(results: TMDBMovie[]): NormalizedMovie[] {
+  return results.map((m) => ({
     id: m.id,
     title: m.title,
     year: m.release_date ? m.release_date.split("-")[0] : null,
@@ -17,11 +41,9 @@ function normalizeMovies(results: any[]) {
   }));
 }
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     // 🔹 Fetch all 3 categories in parallel
-    type TMDBResponse = { results: any[] };
-
     const [trendingRes, newRes, upcomingRes] = await Promise.all([
       axios.get<TMDBResponse>(`${TMDB_BASE_URL}/trending/movie/week?api_key=${TMDB_API_KEY}`),
       axios.get<TMDBResponse>(`${TMDB_BASE_URL}/movie/now_playing?api_key=${TMDB_API_KEY}`),
@@ -37,7 +59,9 @@ export async function GET(req: NextRequest) {
       newArrivals,
       upcoming,
     });
-  } catch (err: any) {
-    return NextResponse.json({ message: err.message }, { status: 500 });
+  } catch (err) {
+    // ✅ Safer error handling
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json({ message }, { status: 500 });
   }
 }

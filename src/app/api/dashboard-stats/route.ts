@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/app/lib/connection";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const { data: genreDist, error: genreErr } = await supabase.rpc("genre_distribution");
     if (genreErr) throw new Error("genre_distribution failed: " + genreErr.message);
@@ -25,8 +25,8 @@ export async function GET(req: NextRequest) {
       topActors: actorStats,
       topDirectors: directorStats,
     });
-  } catch (err: any) {
-    console.error("Stats API Error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch  {
+
+    return NextResponse.json({ status: 500 });
   }
 }

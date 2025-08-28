@@ -24,8 +24,8 @@ export async function POST(req: Request) {
 
     // If data is null, user does not exist
     return NextResponse.json({ exists: !!data });
-  } catch (err: any) {
-    console.error("Unexpected error:", err);
-    return NextResponse.json({ error: err.message || "Something went wrong" }, { status: 500 });
+  } catch  {
+
+    return NextResponse.json("Something went wrong" , { status: 500 });
   }
 }
