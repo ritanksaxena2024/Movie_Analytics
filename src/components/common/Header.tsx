@@ -3,10 +3,11 @@ import { useState, useRef, useEffect } from "react";
 import { FaSearch } from "react-icons/fa";
 import { useTheme } from "../Layout";
 import SearchMovieModal from "./MovieSearchModal";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 export default function Header() {
- const router = useRouter()
+  const router = useRouter();
+  const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -18,10 +19,17 @@ export default function Header() {
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
 
+  const routeToLoginOrLogout = () => {
+    if (pathname === "/admin-dashboard") {
+      // Perform logout logic
+      // For example, remove token cookie and redirect
+      document.cookie = "token=; Max-Age=0; path=/";
+      router.push("/admin-login");
+    } else {
+      router.push("/admin-login");
+    }
+  };
 
-  const routeToLogin=()=>{
-    router.push("/admin-login")
-  }
   // Debounce
   useEffect(() => {
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
@@ -52,9 +60,6 @@ export default function Header() {
     setShowMobileSearch(false);
   };
 
-
-
-  console.log("the id getting passed is this ", selectedMovieId)
   // Desktop outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -138,10 +143,11 @@ export default function Header() {
           )}
         </div>
 
-        <button className="px-3 py-2 bg-[var(--primary)] rounded text-[var(--text-primary)] transition"
-        onClick={routeToLogin}
+        <button
+          className="px-3 py-2 bg-[var(--primary)] rounded text-[var(--text-primary)] transition"
+          onClick={routeToLoginOrLogout}
         >
-          Admin Login
+          {pathname === "/admin-dashboard" ? "Logout" : "Admin Login"}
         </button>
 
         <button

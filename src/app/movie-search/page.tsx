@@ -69,6 +69,7 @@ export default function MovieSearch() {
               movies={trending}
               title="🔥 Trending Now"
               onCardClick={(id) => setSelectedMovieId(id)}
+              downloadFilename="trending-movies"
             />
           </div>
         )}
@@ -78,6 +79,7 @@ export default function MovieSearch() {
             movies={newArrivals}
             title="✨ New Arrivals"
             onCardClick={(id) => setSelectedMovieId(id)}
+            downloadFilename="new-arrivals"
           />
         )}
 
@@ -86,6 +88,7 @@ export default function MovieSearch() {
             movies={upcoming}
             title="🎬 Upcoming"
             onCardClick={(id) => setSelectedMovieId(id)}
+            downloadFilename="upcoming-movies"
           />
         )}
       </div>

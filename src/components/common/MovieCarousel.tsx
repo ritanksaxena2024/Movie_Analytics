@@ -1,4 +1,4 @@
-"use client";
+import DownloadCSV from "./DownloadCsv";
 
 type Movie = {
   id: number;
@@ -10,55 +10,62 @@ type Movie = {
 };
 
 interface MovieCarouselProps {
+  movies: Movie[];
   title: string;
-  movies?: Movie[];
-  onCardClick?: (id: number) => void; // <-- handler
+  onCardClick: (id: number) => void;
+  downloadFilename?: string; // Optional download filename
 }
 
-export default function MovieCarousel({ title, movies, onCardClick }: MovieCarouselProps) {
-  if (!movies || movies.length === 0) {
-    return (
-      <section className="w-full px-6 py-6">
-        <h2 className="text-xl sm:text-2xl font-bold mb-4">{title}</h2>
-        <p className="text-gray-400 text-sm">No movies found.</p>
-      </section>
-    );
-  }
-
+const MovieCarousel: React.FC<MovieCarouselProps> = ({ 
+  movies, 
+  title, 
+  onCardClick, 
+  downloadFilename 
+}) => {
   return (
-    <section className="w-full px-6 py-6">
-      <h2 className="text-xl sm:text-2xl font-bold mb-4">{title}</h2>
-      <div
-        className="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4
-                   [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-      >
-        {movies.map((movie) => (
-          <div
-            key={movie.id}
-            className="snap-start shrink-0 w-40 sm:w-48 md:w-56 lg:w-64 cursor-pointer"
-            onClick={() => onCardClick?.(movie.id)} // <-- trigger click
-          >
-            <div className="bg-gray-900 rounded-lg overflow-hidden shadow-lg hover:scale-105 transition-transform">
-              {movie.poster ? (
-                <img
-                  src={movie.poster}
-                  alt={movie.title}
-                  className="w-full h-64 object-cover"
-                />
-              ) : (
-                <div className="w-full h-64 bg-gray-700 flex items-center justify-center text-gray-300">
-                  No Image
+    <div className="mb-8">
+      {/* Header with title and download button */}
+      <div className="flex items-center justify-between px-6 mb-4">
+        <h2 className="text-2xl font-bold text-white">{title}</h2>
+        {downloadFilename && (
+          <DownloadCSV 
+            movies={movies} 
+            filename={downloadFilename}
+            className="ml-4"
+          />
+        )}
+      </div>
+      
+      {/* Your existing carousel content here */}
+      <div className="overflow-x-auto">
+        <div className="flex gap-4 px-6">
+          {movies.map((movie) => (
+            <div
+              key={movie.id}
+              className="flex-shrink-0 cursor-pointer"
+              onClick={() => onCardClick(movie.id)}
+            >
+              {/* Your existing movie card content */}
+              <div className="w-48 bg-gray-800 rounded-lg overflow-hidden">
+                {movie.poster && (
+                  <img
+                    src={movie.poster}
+                    alt={movie.title}
+                    className="w-full h-72 object-cover"
+                  />
+                )}
+                <div className="p-3">
+                  <h3 className="text-white font-medium truncate">{movie.title}</h3>
+                  <p className="text-gray-400 text-sm">{movie.year}</p>
+                  <p className="text-yellow-400 text-sm">★ {movie.rating}</p>
                 </div>
-              )}
-              <div className="p-3 text-white">
-                <h3 className="text-sm font-semibold truncate">{movie.title}</h3>
-                <p className="text-xs text-gray-400">{movie.year || "N/A"}</p>
-                <p className="text-xs text-yellow-400">⭐ {movie.rating.toFixed(1)}</p>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </section>
+    </div>
   );
-}
+};
+
+export default MovieCarousel;
