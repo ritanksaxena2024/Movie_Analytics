@@ -18,6 +18,7 @@ export default function Header() {
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
+  const mobileSearchRef = useRef<HTMLDivElement | null>(null);
 
   const routeToLoginOrLogout = () => {
     if (pathname === "/admin-dashboard") {
@@ -97,12 +98,14 @@ export default function Header() {
     }
   }, [selectedMovieId]);
 
-  // Desktop outside click
+  // Outside click handler for both desktop and mobile
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
         searchContainerRef.current &&
-        !searchContainerRef.current.contains(event.target as Node)
+        !searchContainerRef.current.contains(event.target as Node) &&
+        mobileSearchRef.current &&
+        !mobileSearchRef.current.contains(event.target as Node)
       ) {
         setShowMobileSearch(false);
       }
@@ -147,7 +150,7 @@ export default function Header() {
           )}
         </div>
 
-        {/* Mobile Search */}
+        {/* Mobile Search Button */}
         <div className="md:hidden relative">
           <button
             onClick={() => setShowMobileSearch((prev) => !prev)}
@@ -155,33 +158,6 @@ export default function Header() {
           >
             <FaSearch />
           </button>
-          {showMobileSearch && (
-            <div className="absolute top-full right-0 mt-2 w-80 bg-[var(--surface)] border border-[var(--overlay)] rounded shadow-lg p-2 z-50">
-              <input
-                type="text"
-                placeholder="Search movies..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                autoFocus
-                className="w-full px-3 py-2 rounded bg-[var(--surface)] text-[var(--text-primary)] border border-[var(--overlay)] focus:outline-none"
-              />
-              {searchQuery && searchResults.length > 0 && (
-                <div className="mt-2 max-h-64 overflow-y-auto border-t border-[var(--overlay)] pt-2">
-                  {searchResults.map((movie) => (
-                    <div
-                      key={`${movie.id}-${movie.imdb_id}`}
-                      className="px-3 py-2 hover:bg-[var(--highlight)] cursor-pointer text-[var(--text-primary)] rounded mb-1"
-                      onClick={() => handleMovieSelect(movie)}
-                    >
-                      <div className="font-medium">{movie.title}</div>
-                      {movie.year && <div className="text-xs opacity-70">({movie.year})</div>}
-                      <div className="text-xs opacity-50">DB ID: {movie.id} | IMDB: {movie.imdb_id}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         <button
@@ -198,6 +174,38 @@ export default function Header() {
           {theme === "light" ? "Dark Mode" : "Light Mode"}
         </button>
       </header>
+
+      {/* Mobile Search Modal */}
+      {showMobileSearch && (
+        <div
+          ref={mobileSearchRef}
+          className="fixed top-20 left-1/2 transform -translate-x-1/2 w-80 max-w-[calc(100vw-2rem)] bg-[var(--surface)] border border-[var(--overlay)] rounded shadow-lg p-2 z-50"
+        >
+          <input
+            type="text"
+            placeholder="Search movies..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            autoFocus
+            className="w-full px-3 py-2 rounded bg-[var(--surface)] text-[var(--text-primary)] border border-[var(--overlay)] focus:outline-none"
+          />
+          {searchQuery && searchResults.length > 0 && (
+            <div className="mt-2 max-h-64 overflow-y-auto border-t border-[var(--overlay)] pt-2">
+              {searchResults.map((movie) => (
+                <div
+                  key={`${movie.id}-${movie.imdb_id}`}
+                  className="px-3 py-2 hover:bg-[var(--highlight)] cursor-pointer text-[var(--text-primary)] rounded mb-1"
+                  onClick={() => handleMovieSelect(movie)}
+                >
+                  <div className="font-medium">{movie.title}</div>
+                  {movie.year && <div className="text-xs opacity-70">({movie.year})</div>}
+                  <div className="text-xs opacity-50">DB ID: {movie.id} | IMDB: {movie.imdb_id}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Movie Modal */}
       {selectedMovieId && (
