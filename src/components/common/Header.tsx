@@ -52,6 +52,9 @@ export default function Header() {
     setShowMobileSearch(false);
   };
 
+
+
+  console.log("the id getting passed is this ", selectedMovieId)
   // Desktop outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

@@ -21,44 +21,85 @@ interface SearchMovieModalProps {
   onClose: () => void;
 }
 
+interface ApiCast {
+  name: string;
+  profile: string | null;
+}
+
+interface ApiDirector {
+  name: string;
+  profile?: string | null;
+}
+
+interface ApiResponse {
+  movie: {
+    id: number;
+    title: string;
+    rating: number;
+    runtime?: number;
+    overview?: string;
+  };
+  videos?: { url: string }[];
+  cast?: ApiCast[];
+  directors?: (string | ApiDirector)[];
+  genres?: string[];
+  teaser_url?: string | null;
+}
+
 export default function SearchMovieModal({ movieId, onClose }: SearchMovieModalProps) {
   const [movie, setMovie] = useState<MovieDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
-useEffect(() => {
-  const fetchMovie = async () => {
-    try {
-      const res = await fetch(`/api/movie-details?id=${movieId}`);
-      const data = await res.json();
+  useEffect(() => {
+    const fetchMovie = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-   
-      const movieData = data.movie || data; 
+        const res = await fetch(`/api/movie-details/${movieId}`);
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
-      if (!movieData) {
-        console.error("Movie data not found:", data);
-        return;
+        const data: ApiResponse = await res.json();
+        console.log("🔍 API Response:", data);
+
+        if (!data.movie) {
+          throw new Error("❌ Movie data not found in API response");
+        }
+
+        const newMovieState: MovieDetail = {
+          id: data.movie.id,
+          title: data.movie.title,
+          rating: data.movie.rating,
+          runtime: data.movie.runtime,
+          overview: data.movie.overview,
+          teaser_url: data.videos?.[0]?.url || data.teaser_url || null,
+          cast: (data.cast ?? []).map((c) => ({
+            name: c.name,
+            profile: c.profile,
+          })),
+          directors: (data.directors ?? []).map((d) =>
+            typeof d === "string"
+              ? { name: d, profile: null }
+              : { name: d.name, profile: d.profile ?? null }
+          ),
+          genres: data.genres ?? [],
+        };
+
+        setMovie(newMovieState);
+      } catch (err) {
+        console.error("🔥 Error fetching movie:", err);
+        setError(err instanceof Error ? err.message : "Unknown error");
+      } finally {
+        setLoading(false);
       }
+    };
 
-    setMovie({
-  id: movieData.id,
-  title: movieData.title,
-  rating: movieData.rating,
-  runtime: movieData.runtime,
-  cast: movieData.cast || [],          
-  directors: movieData.directors || [],
-  genres: movieData.genres || [],     
-});
-    } catch (err) {
-      console.error("Error fetching movie:", err);
+    if (movieId) {
+      fetchMovie();
     }
-  };
-
-  if (movieId) {
-    fetchMovie();
-  }
-}, [movieId]);
-
+  }, [movieId]);
 
   // Close modal on outside click
   useEffect(() => {
@@ -73,7 +114,13 @@ useEffect(() => {
 
   const renderAvatar = (person: Person) => {
     if (person.profile) {
-      return <img src={person.profile} alt={person.name} className="w-20 h-20 rounded-full object-cover mb-1" />;
+      return (
+        <img
+          src={person.profile}
+          alt={person.name}
+          className="w-20 h-20 rounded-full object-cover mb-1"
+        />
+      );
     }
     const initials = person.name
       .split(" ")
@@ -105,6 +152,8 @@ useEffect(() => {
           <div className="w-full h-1/2 bg-black flex items-center justify-center">
             {loading ? (
               <div className="text-[var(--text-primary)]">Loading video...</div>
+            ) : error ? (
+              <div className="text-red-500">⚠️ {error}</div>
             ) : movie?.teaser_url ? (
               <iframe
                 className="w-full h-full"
@@ -114,51 +163,83 @@ useEffect(() => {
                 allowFullScreen
               />
             ) : (
-              <div className="text-[var(--text-primary)]">No Trailer Available</div>
+              <div className="text-[var(--text-primary)]">
+                No Trailer Available
+              </div>
             )}
           </div>
 
           {/* Movie Info */}
           <div className="flex-1 p-4 flex flex-col gap-4 overflow-y-auto">
-            <div className="flex justify-between items-start">
-              <div>
-                <h2 className="text-[var(--text-primary)] text-2xl font-bold">{movie?.title}</h2>
-                <p className="text-[var(--text-secondary)] mt-1">{movie?.overview}</p>
-                <p className="text-[var(--text-secondary)] mt-1">Rating: {movie?.rating}</p>
-                <p className="text-[var(--text-secondary)] mt-1">
-                  Runtime: {movie?.runtime ?? "N/A"} min
-                </p>
-                <p className="text-[var(--text-secondary)] mt-1">
-                  Genres: {movie?.genres.join(", ")}
-                </p>
+            {loading ? (
+              <div className="text-[var(--text-primary)]">
+                Loading movie details...
               </div>
-              {/* Directors */}
-              <div className="flex flex-col items-center ml-4">
-                <h3 className="text-[var(--text-primary)] mb-2">Directors</h3>
-                {movie?.directors.map((d, idx) => (
-                  <div key={idx} className="flex flex-col items-center mb-2 text-center">
-                    {renderAvatar(d)}
-                    <span className="text-sm text-[var(--text-primary)] break-words leading-snug">{d.name}</span>
+            ) : error ? (
+              <div className="text-red-500">⚠️ Failed to load movie details</div>
+            ) : (
+              <div className="flex justify-between items-start">
+                <div>
+                  <h2 className="text-[var(--text-primary)] text-2xl font-bold">
+                    {movie?.title}
+                  </h2>
+                  {movie?.overview && (
+                    <p className="text-[var(--text-secondary)] mt-1">
+                      {movie.overview}
+                    </p>
+                  )}
+                  <p className="text-[var(--text-secondary)] mt-1">
+                    Rating: {movie?.rating}
+                  </p>
+                  <p className="text-[var(--text-secondary)] mt-1">
+                    Runtime: {movie?.runtime ?? "N/A"} min
+                  </p>
+                  <p className="text-[var(--text-secondary)] mt-1">
+                    Genres: {movie?.genres?.join(", ") || "N/A"}
+                  </p>
+                </div>
+
+                {/* Directors */}
+                {movie?.directors && movie.directors.length > 0 && (
+                  <div className="flex flex-col items-center ml-4">
+                    <h3 className="text-[var(--text-primary)] mb-2">
+                      Directors
+                    </h3>
+                    {movie.directors.map((d, idx) => (
+                      <div
+                        key={idx}
+                        className="flex flex-col items-center mb-2 text-center"
+                      >
+                        {renderAvatar(d)}
+                        <span className="text-sm text-[var(--text-primary)] break-words leading-snug">
+                          {d.name}
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
-            </div>
+            )}
 
             {/* Cast */}
-            <div>
-              <h3 className="text-[var(--text-primary)] mb-2">Cast</h3>
-              <div className="flex gap-4 overflow-x-auto [&::-webkit-scrollbar]:hidden scrollbar-none">
-                {movie?.cast.map((c, idx) => (
-                  <div
-                    key={idx}
-                    className="flex flex-col items-center min-w-[80px] text-center text-[var(--text-primary)]"
-                  >
-                    {renderAvatar(c)}
-                    <span className="text-sm break-words leading-snug">{c.name}</span>
-                  </div>
-                ))}
+            {!loading && !error && movie?.cast && movie.cast.length > 0 && (
+              <div>
+                <h3 className="text-[var(--text-primary)] mb-2">Cast</h3>
+                <div className="flex gap-4 overflow-x-auto [&::-webkit-scrollbar]:hidden scrollbar-none">
+                  {movie.cast.map((c, idx) => (
+                    <div
+                      key={idx}
+                      className="flex flex-col items-center min-w-[80px] text-center text-[var(--text-primary)]"
+                    >
+                      {renderAvatar(c)}
+                      <span className="text-sm break-words leading-snug">
+                        {c.name}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import MovieCarousel from "@/components/common/MovieCarousel";
 import MovieModal from "@/components/common/MovieModal";
 
@@ -20,30 +20,38 @@ export default function MovieSearch() {
   const [selectedMovieId, setSelectedMovieId] = useState<number | null>(null);
 
   const bgImages = [
-  
     "/images/newMovie.jpg",
-     "/images/newMovie7.jpg",
-      "/images/newMovie8.jpg",
-   
+    "/images/newMovie7.jpg",
+    "/images/newMovie8.jpg",
   ];
 
+  // ✅ fetch only once
   useEffect(() => {
     const fetchMovies = async () => {
-      const res = await fetch("/api/category-movies");
-      const data = await res.json();
-      setTrending(data.trending || []);
-      setNewArrivals(data.newArrivals || []);
-      setUpcoming(data.upcoming || []);
+      try {
+        const res = await fetch("/api/category-movies");
+        const data = await res.json();
+        setTrending(data.trending || []);
+        setNewArrivals(data.newArrivals || []);
+        setUpcoming(data.upcoming || []);
+      } catch (err) {
+        console.error("Failed to fetch movies:", err);
+      }
     };
     fetchMovies();
   }, []);
 
+  // ✅ useCallback prevents creating a new function each render
+  const handleCloseModal = useCallback(() => {
+    setSelectedMovieId(null);
+  }, []);
+
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentImage(prev => (prev + 1) % bgImages.length);
+      setCurrentImage((prev) => (prev + 1) % bgImages.length);
     }, 2000);
     return () => clearInterval(timer);
-  }, []);
+  }, [bgImages.length]);
 
   return (
     <div className="min-h-screen">
@@ -82,11 +90,9 @@ export default function MovieSearch() {
         )}
       </div>
 
-      {selectedMovieId && (
-        <MovieModal
-          movieId={selectedMovieId}
-          onClose={() => setSelectedMovieId(null)}
-        />
+      {/* ✅ MovieModal mounts only when needed, with stable onClose */}
+      {selectedMovieId !== null && (
+        <MovieModal movieId={selectedMovieId} onClose={handleCloseModal} />
       )}
     </div>
   );

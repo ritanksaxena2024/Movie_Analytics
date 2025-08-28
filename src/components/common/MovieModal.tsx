@@ -18,43 +18,57 @@ interface MovieModalProps {
   onClose: () => void;
 }
 
-// ✅ Type API response structure
 interface MovieApiResponse {
-  movie: {
+  movie?: {
     id: number;
     title: string;
     rating: number;
   };
-  videos: { url: string }[];
-  cast: { name: string; profile: string | null }[];
-  directors: string[];
+  videos?: { url: string }[];
+  cast?: { name: string; profile: string | null }[];
+  directors?: string[];
 }
 
 export default function MovieModal({ movieId, onClose }: MovieModalProps) {
   const [movie, setMovie] = useState<MovieDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
+  console.log("this is the movieId recieved", movieId)
   useEffect(() => {
     setLoading(true);
+    setError(null);
+
     const fetchMovie = async () => {
       try {
         const res = await fetch(`/api/movie-details/${movieId}`);
+        console.log("url hit is ", `/api/movie-details/${movieId}`)
+        if (!res.ok) {
+          throw new Error(`API error: ${res.status}`);
+        }
         const data: MovieApiResponse = await res.json();
+        console.log(data)
+        if (!data) {
+          throw new Error("Movie data not found in response");
+        }
+
         setMovie({
           id: data.movie.id,
           title: data.movie.title,
           rating: data.movie.rating,
-          teaser_url: data.videos[0]?.url ?? null,
-          cast: data.cast.map(c => ({ name: c.name, profile: c.profile })),
-          directors: data.directors.map(d => ({ name: d, profile: null })),
+          teaser_url: data.videos?.[0]?.url ?? null,
+          cast: data.cast?.map(c => ({ name: c.name, profile: c.profile })) ?? [],
+          directors: data.directors?.map(d => ({ name: d, profile: null })) ?? [],
         });
-      } catch (err) {
-        console.error(err);
+      } catch {
+        console.error("Failed to fetch movie:");
+        setError("error");
       } finally {
         setLoading(false);
       }
     };
+
     fetchMovie();
   }, [movieId]);
 
@@ -110,6 +124,8 @@ export default function MovieModal({ movieId, onClose }: MovieModalProps) {
           <div className="w-full h-1/2 bg-black flex items-center justify-center">
             {loading ? (
               <div className="text-white">Loading video...</div>
+            ) : error ? (
+              <div className="text-red-500">{error}</div>
             ) : movie?.teaser_url ? (
               <iframe
                 className="w-full h-full"
