@@ -1,0 +1,72 @@
+# Node modules
+node_modules/
+
+# Build output
+dist/
+build/
+out/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory (for tests)
+coverage/
+*.lcov
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE settings
+.vscode/
+.idea/
+*.swp
+
+# TypeScript
+*.tsbuildinfo
+
+# Next.js / Remix / Nuxt
+.next/
+.vercel/
+.netlify/
+
+# Expo / React Native
+.expo/
+.expo-shared/
+android/
+ios/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Cache
+.cache/
+.npm/
+.yarn/
+.pnpm-store/
+
+# Generated docs
+docs/.vuepress/dist
+*.docz
+.docusaurus
+
+# Lock files (optional if you want consistency, remove to commit them)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
